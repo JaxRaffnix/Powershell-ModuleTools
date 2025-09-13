@@ -23,8 +23,7 @@ function Generate-Manifest {
         [Parameter(Mandatory)]
         [string]$ModulePath,
 
-        [Parameter(Mandatory)]
-        [string]$ModuleName
+        [string]$ModuleName = (Split-Path $ModulePath -Leaf)
     )
 
     if (-not (Test-Path $ConfigPath)) {
@@ -51,7 +50,7 @@ function Generate-Manifest {
             -PowerShellVersion ($(if ($config.PowerShellVersion) { $config.PowerShellVersion } else { "5.1" })) `
             -FunctionsToExport $config.FunctionsToExport
 
-        Write-Host "Manifest created at: $ManifestPath" -ForegroundColor Green
+        Write-Host "Manifest created at: '$ManifestPath'" -ForegroundColor Green
     } catch {
         Write-Error "Failed to create manifest: $_"
     }
