@@ -96,13 +96,10 @@ Result:
 MyModule/
 │
 ├── private/               # Internal helpers (not exported)
-│   └── Convert-Helper.ps1
 │
 ├── public/                # Exported (public) functions
-│   ├── Get-Something.ps1
-│   └── Set-Something.ps1
 │
-├── manifest.json          # Data for manifest generator
+├── MyModule.json          # Data for manifest generator
 ├── MyModule.psd1          # Generated automatically after calling Install-FromDev
 ├── MyModule.psm1          # Root module (imports/exports functions)
 └── README.md
