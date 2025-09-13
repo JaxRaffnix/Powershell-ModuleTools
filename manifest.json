@@ -1,9 +1,8 @@
 {
-    "ModuleName": "NVIDIA-Driver-Updater",
     "ModuleVersion": "1.0.0",
     "Author": "Jan Hoegen",
-    "Description": "Check current NVIDIA driver version and download & install newest release.",
-    "ProjectUri": "https://github.com/JaxRaffnix/NVIDIA-Driver-Updater",
-    "FunctionsToExport": ["Update-NVidiaDriver"],
+    "Description": "Installs and imports a PowerShell module from a development folder into the user's module path.",
+    "ProjectUri": "https://github.com/JaxRaffnix/Powershell-ModuleTools",
+    "FunctionsToExport": ["Install-FromDev"],
     "PowerShellVersion": "5.1"
 }

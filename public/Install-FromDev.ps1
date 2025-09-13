@@ -1,37 +1,43 @@
 function Install-FromDev {
     <#
     .SYNOPSIS
-    Installs and imports the a PowerShell module into the user's module path.
+    Installs and imports a PowerShell module from a development folder into the user's module path.
 
     .DESCRIPTION
     Copies the module folder into the user’s module path:
     $env:USERPROFILE\Documents\WindowsPowerShell\Modules
-
     If a module with the same name already exists, it is removed first.
     Afterwards, the module is imported into the current session.
 
-    .EXAMPLE
-    Install-FromDev -ModulePath .
-    Installs the module located in the current folder into the user's PowerShell
-    module path and imports it.
-    #>
+    .PARAMETER ModulePath
+    Path to the module folder to install.
 
+    .PARAMETER ConfigPath
+    Path to the JSON config file describing the module manifest.
+
+    .EXAMPLE
+    Install-FromDev -ModulePath . -ConfigPath .\manifest.json
+    #>
 
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [string]$ModulePath, 
+        [string]$ModulePath,
 
         [Parameter(Mandatory)]
-        [string]$ConfigPath
+        [string]$ConfigPath,
 
+        [string]$ModuleName = (Split-Path $ModulePath -Leaf)
     )
 
+    $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
+    $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
+    $TargetPath = Join-Path $env:USERPROFILE "Documents\WindowsPowerShell\Modules" $ModuleName
 
-    #________________________________________________________________
-    # Check powershell version and execution policy
+    Write-Host "Installing module $ModuleName from '$ModulePath' to '$TargetPath'..." -ForegroundColor Cyan
 
 
+    # --- Preflight: execution policy and PS version ---
     $RequiredPolicy = "RemoteSigned"
     try {
         $CurrentExecutionPolicy = Get-ExecutionPolicy -Scope CurrentUser
@@ -47,37 +53,26 @@ function Install-FromDev {
         throw "This function requires PowerShell 5.1. Current version: $($PSVersionTable.PSVersion)"
     }
 
+    # --- Read config ---
+    if (-not (Test-Path $ConfigPath)) {
+        throw "Config file not found: $ConfigPath"
+    }
 
-    #________________________________________________________________
-    # Check powershell version and execution policy
+    try {
+        $config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+    } catch {
+        throw "Failed to read or parse JSON config: $_"
+    }
 
-
-    # $ModuleName     = Split-Path (Split-Path $ModulePath -Child) -Leaf  # get name of the current folder excluding the full path
-    $TargetPath    = Join-Path $env:USERPROFILE "Documents\WindowsPowerShell\Modules" $ModuleName
     
-    Write-Host "Installing module $ModuleName from '$ModulePath' to '$TargetPath'..." -ForegroundColor Cyan
+    # --- Generate manifest ---
+    try {
+        Generate-Manifest -ConfigPath $ConfigPath -ModulePath $ModulePath -ModuleName $ModuleName
+    } catch {
+        Write-Error "Failed to generate manifest: $_"
+    }
 
-
-    #________________________________________________________________
-    # Call Manifest Generator
-
-    # $ManifestScript = Join-Path $ModulePath "tools\Generate-Manifest.ps1"
-    # if (Test-Path $ManifestScript) {
-    #     try {
-    #         & $ManifestScript
-    #         Write-Host "Generate-Manifest.ps1 completed successfully." -ForegroundColor Green
-    #     } catch {
-    #         Write-Error "Failed to run Generate-Manifest.ps1: $_"
-    #     }
-    # } else {
-    #     Write-Warning "Generate-Manifest.ps1 not found. Skipping manifest generation."
-    # }
-    Generate-Manifest -ConfigPath $ConfigPath
-
-
-    #________________________________________________________________
-    # Remove existing module amd delete old files
-
+    # --- Remove existing module ---
     if (Get-Module -Name $ModuleName) {
         try {
             Remove-Module -Name $ModuleName -Force -ErrorAction Stop
@@ -96,17 +91,8 @@ function Install-FromDev {
         }
     }
 
-    #________________________________________________________________
-    # Copy new files
-    try {
-        $config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
-    } catch {
-        throw "Failed to read or parse JSON config: $_"
-    }
-
+    # --- Copy new module files ---
     New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
-
-    $IgnoreFiles = config.$IgnoreFiles
 
     $ItemsToCopy = Get-ChildItem -Path $ModulePath -Recurse -Force | Where-Object {
         $relativePath = $_.FullName.Substring($ModulePath.Length + 1)
@@ -131,9 +117,7 @@ function Install-FromDev {
         }
     }
 
-    #________________________________________________________________
-    # Import Module
-
+    # --- Import module ---
     try {
         Import-Module $TargetPath -Force -ErrorAction Stop
         Write-Host "Module $ModuleName installed successfully." -ForegroundColor Green
