@@ -15,6 +15,9 @@ function Install-FromDev {
     .PARAMETER ConfigPath
     Path to the JSON config file describing the module manifest.
 
+    .PARAMETER ModuleName
+    Name of the module. If not provided, it is derived from the ModulePath.
+
     .EXAMPLE
     Install-FromDev -ModulePath . -ConfigPath .\manifest.json
     #>
@@ -30,9 +33,7 @@ function Install-FromDev {
         [string]$ModuleName = (Split-Path $ModulePath -Leaf)
     )
 
-    $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
-    $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
-    $TargetPath = Join-Path $env:USERPROFILE "Documents\WindowsPowerShell\Modules" $ModuleName
+    $TargetPath = Join-Path "$env:USERPROFILE\Documents\WindowsPowerShell\Modules" $ModuleName
 
     Write-Host "Installing module $ModuleName from '$ModulePath' to '$TargetPath'..." -ForegroundColor Cyan
 
@@ -63,7 +64,8 @@ function Install-FromDev {
     } catch {
         throw "Failed to read or parse JSON config: $_"
     }
-
+    $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
+    $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
     
     # --- Generate manifest ---
     try {
@@ -94,28 +96,13 @@ function Install-FromDev {
     # --- Copy new module files ---
     New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
 
-    $ItemsToCopy = Get-ChildItem -Path $ModulePath -Recurse -Force | Where-Object {
-        $relativePath = $_.FullName.Substring($ModulePath.Length + 1)
-        foreach ($ignore in $IgnoreFiles) {
-            if ($relativePath -like "$ignore*") { return $false }
-        }
-        return $true
+    try {
+        Copy-Item -Path "$ModulePath\*" -Destination $TargetPath -Recurse -Force -Exclude $IgnoreFiles
+        Write-Host "Copied module files successfully." -ForegroundColor Green
+    } catch {
+        Write-Error "Failed to copy module files: $_"
     }
 
-    foreach ($item in $ItemsToCopy) {
-        $relativePath = $item.FullName.Substring($ModulePath.Length + 1)
-        $target = Join-Path $TargetPath $relativePath
-
-        if ($item.PSIsContainer) {
-            New-Item -ItemType Directory -Path $target -Force | Out-Null
-        } else {
-            $destFolder = Split-Path $target -Parent
-            if (-not (Test-Path $destFolder)) {
-                New-Item -ItemType Directory -Path $destFolder -Force | Out-Null
-            }
-            Copy-Item -Path $item.FullName -Destination $target -Force
-        }
-    }
 
     # --- Import module ---
     try {

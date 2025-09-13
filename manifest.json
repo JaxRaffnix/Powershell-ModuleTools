@@ -4,5 +4,6 @@
     "Description": "Installs and imports a PowerShell module from a development folder into the user's module path.",
     "ProjectUri": "https://github.com/JaxRaffnix/Powershell-ModuleTools",
     "FunctionsToExport": ["Install-FromDev"],
-    "PowerShellVersion": "5.1"
+    "PowerShellVersion": "5.1",
+    "IgnoreFiles": [".git", ".gitignore", ".vscode", "manifest.json", "self-installer.ps1" ]
 }
