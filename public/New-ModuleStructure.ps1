@@ -1,4 +1,4 @@
-function Set-Structure {
+function New-ModuleStructure {
     <#
     .SYNOPSIS
     Creates a standard PowerShell module folder structure.
@@ -18,7 +18,7 @@ function Set-Structure {
     Overwrite existing files with templates or recreate base files if they already exist.
 
     .EXAMPLE
-    Set-Structure -ModulePath "C:\Dev\MyModule"
+    New-ModuleStructure -ModulePath "C:\Dev\MyModule"
     #>
 
     [CmdletBinding()]

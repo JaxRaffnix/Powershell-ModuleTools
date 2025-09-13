@@ -62,10 +62,10 @@ Example `manifest.json`:
 
 ### Create Project Structure
 
-`Set-Structure` creates a default project structure, including private and public directoriesa and inital template files.
+`New-ModuleStructure` creates a default project structure, including private and public directoriesa and inital template files.
 
 ```powershell
-Set-Structure -ModulePath <Modulepath> [-ModuleName <ModuleName>, -Force]
+New-ModuleStructure -ModulePath <Modulepath> [-ModuleName <ModuleName>, -Force]
 ```
 
 - **ModulePath:** Path to the module directory.
@@ -87,7 +87,7 @@ By following the folder names and using the MyModule.psm1 file, all functions lo
 #### Example
 
 ```powershell
-Set-Structure -Modulepath "MyModule"
+New-ModuleStructure -Modulepath "MyModule"
 ```
 
 Result:

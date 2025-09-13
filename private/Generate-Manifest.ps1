@@ -34,6 +34,9 @@ function Generate-Manifest {
 
     $ManifestPath = Join-Path $ModulePath "$ModuleName.psd1"
 
+    # check if a function in the public folder is not exported
+    Test-PublicExport -ModulePath $ModulePath
+
     # Mandatory / auto-set fields
     $manifestParams = @{
         Path            = $ManifestPath

@@ -10,10 +10,8 @@ Get-ChildItem -Path "$PSScriptRoot\Public\*.ps1" -Recurse | ForEach-Object {
 }
 
 # Export functions whose names match the public file names and actually exist
-$functionsToExport = Get-ChildItem "$PSScriptRoot\Public\*.ps1" | ForEach-Object {
-    $funcName = $_.BaseName
-    if (Get-Command $funcName -CommandType Function -ErrorAction SilentlyContinue) {
-        $funcName
-    }
+$functionsToExport = Get-PublicFiles -ModulePath $PSScriptRoot | Where-Object {
+    Get-Command $_ -CommandType Function -ErrorAction SilentlyContinue
 }
+
 Export-ModuleMember -Function $functionsToExport
