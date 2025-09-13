@@ -50,8 +50,8 @@ function Generate-Manifest {
     }
 
     try {
-        New-ModuleManifest @manifestParams -Force
-        Write-Verbose "Manifest created at '$ManifestPath'"
+        New-ModuleManifest @manifestParams
+        Write-Information "Manifest created at '$ManifestPath'"
     } catch {
         throw "Failed to create manifest: $_"
     }

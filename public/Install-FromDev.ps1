@@ -56,7 +56,7 @@ function Install-FromDev {
         $CurrentExecutionPolicy = Get-ExecutionPolicy -Scope CurrentUser
         if ($CurrentExecutionPolicy -ne $RequiredPolicy) {
             Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy $RequiredPolicy -Force
-            Write-Host "Execution Policy has been set to '$RequiredPolicy' for the current user."
+            Write-Information "Execution Policy has been set to '$RequiredPolicy' for the current user."
         }
     } catch {
         Write-Error "Failed to set execution policy: $_"
@@ -80,17 +80,13 @@ function Install-FromDev {
     $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
     $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
 
-    try {
-        Generate-Manifest -ModulePath $ModulePath -Config $config -ModuleName $ModuleName
-    } catch {
-        Write-Error "Failed to generate manifest: $_"
-    }
-
+    Generate-Manifest -ModulePath $ModulePath -Config $config -ModuleName $ModuleName
+    
     # --- Remove existing module ---
     if (Get-Module -Name $ModuleName) {
         try {
             Remove-Module -Name $ModuleName -Force -ErrorAction Stop
-            Write-Host "Removed loaded module '$ModuleName' from the current session."
+            Write-Information "Removed loaded module '$ModuleName' from the current session."
         } catch {
             Write-Error "Failed to remove loaded module $ModuleName : $_"
         }
@@ -99,9 +95,9 @@ function Install-FromDev {
     if (Test-Path $TargetPath) {
         try {
             Remove-Item -Path $TargetPath -Recurse -Force -ErrorAction Stop
-            Write-Host "Removed existing module files at: '$TargetPath'."
+            Write-Information "Removed existing module files at: '$TargetPath'."
         } catch {
-            Write-Error "Failed to remove existing module: $_"
+            Throw "Failed to remove existing module: $_"
         }
     }
 
@@ -110,9 +106,9 @@ function Install-FromDev {
 
     try {
         Copy-Item -Path "$ModulePath\*" -Destination $TargetPath -Recurse -Force -Exclude $IgnoreFiles
-        Write-Host "Copied module files successfully." 
+        Write-Information "Copied module files successfully." 
     } catch {
-        Write-Error "Failed to copy module files: $_"
+        Throw "Failed to copy module files: $_"
     }
 
 
@@ -121,6 +117,6 @@ function Install-FromDev {
         Import-Module $TargetPath -Force -ErrorAction Stop
         Write-Host "Module $ModuleName installed successfully." -ForegroundColor Green
     } catch {
-        Write-Error "Failed to import module '$ModuleName': $_"
+        Throw "Failed to import module '$ModuleName': $_"
     }
 }

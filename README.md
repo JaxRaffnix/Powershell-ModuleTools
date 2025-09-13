@@ -64,6 +64,35 @@ Example `manifest.json`:
 
 `Set-Structure` creates a default project structure, including private and public directoriesa and inital template files.
 
+```powershell
+Set-Structure -ModulePath <Modulepath> [-ModuleName <ModuleName>, -Force]
+```
+
+- **ModulePath:** Path to the module directory.
+- **ModuleName: (optional)** Name of the module. Defaults to the folder name.
+- **Force (Switch):** If specified, existing data will be overwritten.
+
+This command will:
+
+1. Ensure private/ and public/ directories exist.
+2. Create missing files: README.md, manifest.json, and ModuleName.psm1.
+3. Copy template versions of manifest.json and MyModule.psm1 from the templates folder.
+
+
+
+By following the folder names and using the MyModule.psm1 file, all functions located in the `public` folder with matching file names will be automatically exported, streamlining the module's export process.
+
+> [!Important] 
+> Only functions with matching filenames in the `public` folder will be exported!
+
+#### Example
+
+```powershell
+Set-Structure -Modulepath "MyModule"
+```
+
+Result:
+
 ```text
 MyModule/
 │
@@ -78,28 +107,4 @@ MyModule/
 ├── MyModule.psd1          # Generated automatically after calling Install-FromDev
 ├── MyModule.psm1          # Root module (imports/exports functions)
 └── README.md
-```
-
-```powershell
-Set-Structure -ModulePath <Modulepath> [-ModuleName <ModuleName>]
-```
-
-- **ModulePath:** Path to the module directory.
-- **ModuleName: (optional)** Name of the module. Defaults to the folder name.
-
-This command will:
-
-1. Ensure private/ and public/ directories exist.
-2. Create missing files: README.md, manifest.json, and ModuleName.psm1.
-3. Copy template versions of manifest.json and MyModule.psm1 from the templates folder.
-
-By following the folder names and using the MyModule.psm1 file, all functions located in the `public` folder with matching file names will be automatically exported, streamlining the module's export process.
-
-> [!Important] 
-> Only functions with matching filenames in the `public` folder will be exported!
-
-#### Example
-
-```powershell
-Set-Structure -Modulepath "MyModule"
 ```
