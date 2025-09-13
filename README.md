@@ -20,6 +20,8 @@ After installation, the `Install-FromDev` function is available system-wide.
 
 ## Usage
 
+### Install Module from Development Directory
+
 `Install-FromDev` installs and imports a PowerShell module from a development folder into your local modules directory:
 
 ```powershell
@@ -37,7 +39,7 @@ This command will:
 3. Copy new module files to the local module path.
 4. Import the module into the current session.
 
-## Example
+#### Example
 
 ```powershell
 cd MyModule/
@@ -58,9 +60,9 @@ Example `manifest.json`:
 }
 ```
 
-## Recommended Project Structure
+### Create Project Structure
 
-It is recommended to use this default project layout:
+`Set-Structure` creates a default project structure, including private and public directoriesa and inital template files.
 
 ```text
 MyModule/
@@ -73,35 +75,31 @@ MyModule/
 │   └── Set-Something.ps1
 │
 ├── manifest.json          # Data for manifest generator
-├── MyModule.psd1          # Generated automatically
+├── MyModule.psd1          # Generated automatically after calling Install-FromDev
 ├── MyModule.psm1          # Root module (imports/exports functions)
 └── README.md
 ```
 
-Below you can find the recommended structure for your `.psd1` file. By following this approach, all functions located in the `public` folder with matching file names will be automatically exported, streamlining the module's export process.
+```powershell
+Set-Structure -ModulePath <Modulepath> [-ModuleName <ModuleName>]
+```
+
+- **ModulePath:** Path to the module directory.
+- **ModuleName: (optional)** Name of the module. Defaults to the folder name.
+
+This command will:
+
+1. Ensure private/ and public/ directories exist.
+2. Create missing files: README.md, manifest.json, and ModuleName.psm1.
+3. Copy template versions of manifest.json and MyModule.psm1 from the templates folder.
+
+By following the folder names and using the MyModule.psm1 file, all functions located in the `public` folder with matching file names will be automatically exported, streamlining the module's export process.
 
 > [!Important] 
 > Only functions with matching filenames in the `public` folder will be exported!
 
-Example `MyModule.psm1`:
+#### Example
 
 ```powershell
-# Import all private helpers
-Get-ChildItem -Path "$PSScriptRoot\Private\*.ps1" -Recurse | ForEach-Object {
-     . $_.FullName
-}
-
-# Import all public functions
-Get-ChildItem -Path "$PSScriptRoot\Public\*.ps1" -Recurse | ForEach-Object {
-     . $_.FullName
-}
-
-# Export functions whose names match public file names and actually exist
-$functionsToExport = Get-ChildItem "$PSScriptRoot\Public\*.ps1" | ForEach-Object {
-     $funcName = $_.BaseName
-     if (Get-Command $funcName -CommandType Function -ErrorAction SilentlyContinue) {
-          $funcName
-     }
-}
-Export-ModuleMember -Function $functionsToExport
+Set-Structure -Modulepath "MyModule"
 ```
