@@ -2,6 +2,10 @@
 
 Easily install and update local PowerShell modules during development.
 
+## TODO:
+
+All public functions are exported if they match the filename. If there is a second function in a public file, there will be an error. This is a very hardcoded way of enabling functions.
+
 ## Requirements
 
 - PowerShell 5.1 or PowerShell 7+
@@ -35,6 +39,7 @@ Install-FromDev -ModulePath <ModulePath> [-ModuleName <ModuleName>, -ConfigPath 
 
 This command will:
 
+1. Check if a public function is not exported.
 1. Remove any existing version of the module from your local module path.
 2. Delete old module files.
 3. Copy new module files to the local module path.
