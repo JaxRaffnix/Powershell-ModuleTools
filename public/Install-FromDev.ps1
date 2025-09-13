@@ -33,9 +33,16 @@ function Install-FromDev {
         [string]$ModuleName = (Split-Path $ModulePath -Leaf)
     )
 
-    $TargetPath = Join-Path "$env:USERPROFILE\Documents\WindowsPowerShell\Modules" $ModuleName
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        $ModuleDirectory = "$env:USERPROFILE\Documents\PowerShell\Modules"
+        Write-Warning "Using PowerShell 6+ module directory path."
+    } else {
+        $ModuleDirectory = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
+        Write-Warning "Using Windows PowerShell 5 module directory path."
+    }
+    $TargetPath = Join-Path $ModuleDirectory $ModuleName
 
-    Write-Host "Installing module $ModuleName from '$ModulePath' to '$TargetPath'..." -ForegroundColor Cyan
+    Write-Host "Installing module '$ModuleName' from '$ModulePath' to '$TargetPath'..." -ForegroundColor Cyan
 
 
     # --- Preflight: execution policy and PS version ---
@@ -50,9 +57,7 @@ function Install-FromDev {
         Write-Error "Failed to set execution policy: $_"
     }
 
-    if ($PSVersionTable.PSVersion.Major -ne 5) {
-        throw "This function requires PowerShell 5.1. Current version: $($PSVersionTable.PSVersion)"
-    }
+    
 
     # --- Read config ---
     if (-not (Test-Path $ConfigPath)) {
@@ -64,12 +69,14 @@ function Install-FromDev {
     } catch {
         throw "Failed to read or parse JSON config: $_"
     }
+
+
+    # --- Generate manifest ---
     $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
     $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
     
-    # --- Generate manifest ---
     try {
-        Generate-Manifest -ConfigPath $ConfigPath -ModulePath $ModulePath -ModuleName $ModuleName
+        Generate-Manifest -ModulePath $ModulePath -Config $config -ModuleName $ModuleName
     } catch {
         Write-Error "Failed to generate manifest: $_"
     }
@@ -98,7 +105,7 @@ function Install-FromDev {
 
     try {
         Copy-Item -Path "$ModulePath\*" -Destination $TargetPath -Recurse -Force -Exclude $IgnoreFiles
-        Write-Host "Copied module files successfully." -ForegroundColor Green
+        Write-Host "Copied module files successfully." 
     } catch {
         Write-Error "Failed to copy module files: $_"
     }

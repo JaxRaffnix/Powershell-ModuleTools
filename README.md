@@ -4,7 +4,7 @@ Simplify the installation of local PowerShell modules during development.
 
 ## Requirements
 
-- PowerShell 5.1  
+- PowerShell 7
 - Windows 10 or 11  
 
 ## Installation
