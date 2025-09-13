@@ -7,19 +7,24 @@ function Install-FromDev {
     Copies the module folder into the user’s module path:
     $env:USERPROFILE\Documents\WindowsPowerShell\Modules
     If a module with the same name already exists, it is removed first.
-    Afterwards, the module is imported into the current session.
+    Afterwards, the module is imported into the current session. 
+    The module manifest (.psd1) is generated from a JSON config file.
 
     .PARAMETER ModulePath
     Path to the module folder to install.
 
     .PARAMETER ConfigPath
-    Path to the JSON config file describing the module manifest.
+    Path to the JSON config file describing the module manifest. Optionally includes the keyowrd IgnoreFiles with ann array of file/folder names to exclude when copying the module.
+    Any key/value pair in the JSON is passed to New-ModuleManifest. Path and RootModule are auto-set. ModuleVersion and PowerShellVersion are set to defaults if not provided.
 
     .PARAMETER ModuleName
     Name of the module. If not provided, it is derived from the ModulePath.
 
     .EXAMPLE
     Install-FromDev -ModulePath . -ConfigPath .\manifest.json
+
+    .NOTES
+    To check allowed keywords for the manifest generator, see: https://learn.microsoft.com/de-de/powershell/module/microsoft.powershell.core/new-modulemanifest?view=powershell-7.5
     #>
 
     [CmdletBinding()]
@@ -74,7 +79,7 @@ function Install-FromDev {
     # --- Generate manifest ---
     $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
     $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
-    
+
     try {
         Generate-Manifest -ModulePath $ModulePath -Config $config -ModuleName $ModuleName
     } catch {
@@ -85,7 +90,7 @@ function Install-FromDev {
     if (Get-Module -Name $ModuleName) {
         try {
             Remove-Module -Name $ModuleName -Force -ErrorAction Stop
-            Write-Host "Removed loaded module $ModuleName from the current session."
+            Write-Host "Removed loaded module '$ModuleName' from the current session."
         } catch {
             Write-Error "Failed to remove loaded module $ModuleName : $_"
         }
