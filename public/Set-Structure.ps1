@@ -34,69 +34,73 @@ function Set-Structure {
     )
 
     $directories = @("private", "public")
-    $files = @("README.md", "manifest.json", "$ModuleName.psm1")
+    $files = @("README.md")
 
-    Write-Host "Setting up structure for module '$ModuleName' in '$ModulePath'..." -ForegroundColor Cyan
+    Write-Host "Setting up structure for module '$ModuleName' in directory '$ModulePath'..." -ForegroundColor Cyan
 
     foreach ($dir in $directories) {
         $fullPath = Join-Path $ModulePath $dir
         if (-not (Test-Path $fullPath)) {
             try {
                 New-Item -ItemType Directory -Path $fullPath -Force | Out-Null
-                Write-Information "Created directory: $fullPath"
+                Write-Information "Created directory: '$fullPath'"
             } catch {
                 throw "Failed to create directory '$fullPath': $_"
             }
         } else {
-            Write-Warning "Directory already exists: $fullPath"
+            Write-Warning "Directory already exists: '$fullPath'"
         }
     }
 
     foreach ($file in $files) {
         $fullPath = Join-Path $ModulePath $file
-        if (-not (Test-Path $fullPath) -or $Force) {
+        $exists = Test-Path $fullPath
+
+        if (-not $exists -or $Force) {
             try {
                 New-Item -ItemType File -Path $fullPath -Force | Out-Null
-                if (Test-Path $fullPath -and $Force) {
-                    Write-Information "Overwritten file: $fullPath"
+                if ($exists -and $Force) {
+                    Write-Warning ("Overwritten file: '$fullPath'")
                 } else {
-                    Write-Information "Created file: $fullPath"
+                    Write-Information ("Created file: '$fullPath'")
                 }
             } catch {
                 throw "Failed to create or overwrite file '$fullPath': $_"
             }
         } else {
-            Write-Warning "File already exists: $fullPath"
+            Write-Warning ("File already exists: '$fullPath'")
         }
     }
 
+
     # Copy template files if they exist
-    $templateDir = Join-Path $PSScriptRoot "templates"
+    $templateDir = Join-Path (Split-Path $PSScriptRoot -Parent) "templates"
 
     $templateFiles = @{
         "$templateDir\mymodule.psm1" = (Join-Path $ModulePath "$ModuleName.psm1")
-        "$templateDir\manifest.json" = (Join-Path $ModulePath "manifest.json")
+        "$templateDir\mymodule.json" = (Join-Path $ModulePath "$ModuleName.json")
     }
 
     foreach ($src in $templateFiles.Keys) {
         $dst = $templateFiles[$src]
         if (Test-Path $src) {
-            if ((-not (Test-Path $dst)) -or $Force) {
+            $dstExists = Test-Path $dst
+            if (-not $dstExists -or $Force) {
                 try {
                     Copy-Item $src -Destination $dst -Force
-                    if (Test-Path $dst -and $Force) {
-                        Write-Information "Overwritten template: $src -> $dst"
+                    if ($dstExists -and $Force) {
+                        Write-Warning "Overwritten template: From '$src' to '$dst'"
                     } else {
-                        Write-Information "Copied template: $src -> $dst"
+                        Write-Information "Copied template: From '$src' to '$dst'"
                     }
                 } catch {
-                    Throw "Failed to copy template file '$src' to '$dst': $_"
+                    Throw "Failed to copy template file from '$src' to '$dst': $_"
                 }
             } else {
-                Write-Warning "Template target already exists: $dst"
+                Write-Warning "Template target already exists: '$dst'"
             }
         } else {
-            Throw "Template not found: $src"
+            Throw "Template not found: '$src'"
         }
     }
 

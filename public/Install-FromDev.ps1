@@ -13,15 +13,16 @@ function Install-FromDev {
     .PARAMETER ModulePath
     Path to the module folder to install.
 
-    .PARAMETER ConfigPath
-    Path to the JSON config file describing the module manifest. Optionally includes the keyowrd IgnoreFiles with ann array of file/folder names to exclude when copying the module.
-    Any key/value pair in the JSON is passed to New-ModuleManifest. Path and RootModule are auto-set. ModuleVersion and PowerShellVersion are set to defaults if not provided.
-
     .PARAMETER ModuleName
     Name of the module. If not provided, it is derived from the ModulePath.
 
+    .PARAMETER ConfigPath
+    Path to the JSON config file describing the module manifest. Optionally includes the keyowrd IgnoreFiles with ann array of file/folder names to exclude when copying the module.
+    Any key/value pair in the JSON is passed to New-ModuleManifest. Path and RootModule are auto-set. ModuleVersion and PowerShellVersion are set to defaults if not provided.
+    Defaults to "$ModulePath\$ModuleName.json".
+
     .EXAMPLE
-    Install-FromDev -ModulePath . -ConfigPath .\manifest.json
+    Install-FromDev -ModulePath .
 
     .NOTES
     To check allowed keywords for the manifest generator, see: https://learn.microsoft.com/de-de/powershell/module/microsoft.powershell.core/new-modulemanifest?view=powershell-7.5
@@ -32,10 +33,9 @@ function Install-FromDev {
         [Parameter(Mandatory)]
         [string]$ModulePath,
 
-        [Parameter(Mandatory)]
-        [string]$ConfigPath,
+        [string]$ModuleName = (Split-Path $ModulePath -Leaf),
 
-        [string]$ModuleName = (Split-Path $ModulePath -Leaf)
+        [string]$ConfigPath = (Join-Path $ModulePath "$ModuleName.json")
     )
 
     if ($PSVersionTable.PSVersion.Major -ge 6) {

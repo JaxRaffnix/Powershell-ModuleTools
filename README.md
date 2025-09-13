@@ -25,12 +25,13 @@ After installation, the `Install-FromDev` function is available system-wide.
 `Install-FromDev` installs and imports a PowerShell module from a development folder into your local modules directory:
 
 ```powershell
-Install-FromDev -ModulePath <ModulePath> -ConfigPath <ConfigPath> [-ModuleName <ModuleName>]
+Install-FromDev -ModulePath <ModulePath> [-ModuleName <ModuleName>, -ConfigPath <ConfigPath>]
 ```
 
 - **ModulePath:** Path to the module repository (use `.` for the current directory).
-- **ConfigPath:** Path to a JSON config file describing the module manifest. Supports an `IgnoreFiles` array to exclude files/folders when copying. Other key/value pairs are passed to `New-ModuleManifest`. `Path` and `RootModule` are set automatically. Defaults are used for `ModuleVersion` and `PowerShellVersion` if not provided. See [New-ModuleManifest documentation](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/new-modulemanifest?view=powershell-7.5) for allowed keywords.
 - **ModuleName (optional):** Name of the module to export. Defaults to the current folder name.
+- **ConfigPath (optional):** Path to a JSON config file describing the module manifest. Supports an `IgnoreFiles` array to exclude files/folders when copying. Other key/value pairs are passed to `New-ModuleManifest`. `Path` and `RootModule` are set automatically. Defaults are used for `ModuleVersion` and `PowerShellVersion` if not provided. See [New-ModuleManifest documentation](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/new-modulemanifest?view=powershell-7.5) for allowed keywords. Defaults to `<ModulePath>\<ModuleName>.json`
+
 
 This command will:
 
@@ -54,9 +55,8 @@ Example `manifest.json`:
   "Author": "Jan Hoegen",
   "Description": "Installs and imports a PowerShell module from a development folder into the user's module path.",
   "ProjectUri": "https://github.com/JaxRaffnix/Powershell-ModuleTools",
-  "FunctionsToExport": ["Install-FromDev"],
   "PowerShellVersion": "5.1",
-  "IgnoreFiles": [".git", ".gitignore", ".vscode", "manifest.json", "self-installer.ps1"]
+  "IgnoreFiles": [".git", ".gitignore", ".vscode", "Powershell-ModuleTools.json", "self-installer.ps1"]
 }
 ```
 
@@ -79,10 +79,9 @@ This command will:
 3. Copy template versions of manifest.json and MyModule.psm1 from the templates folder.
 
 
-
 By following the folder names and using the MyModule.psm1 file, all functions located in the `public` folder with matching file names will be automatically exported, streamlining the module's export process.
 
-> [!Important] 
+> [!Important]
 > Only functions with matching filenames in the `public` folder will be exported!
 
 #### Example
