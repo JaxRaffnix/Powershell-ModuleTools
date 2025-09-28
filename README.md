@@ -4,7 +4,7 @@ Easily install and update local PowerShell modules during development.
 
 ## TODO:
 
-All public functions are exported if they match the filename. If there is a second function in a public file, there will be an error. This is a very hardcoded way of enabling functions.
+- All public functions are exported if they match the filename. If there is a second function in a public file, there will be an error. This is a very hardcoded way of enabling functions.
 
 ## Requirements
 
