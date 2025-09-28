@@ -47,44 +47,52 @@ Path to JSON config file. Defaults to "$ModulePath\$ModuleName.json".
 
     # --- Module directories ---
     $ModuleDirectories = @(
-        "$env:USERPROFILE\Documents\WindowsPowerShell\Modules",
-        "$env:USERPROFILE\Documents\PowerShell\Modules"
-    ) | Where-Object { Test-Path $_ }
+    "$env:USERPROFILE\Documents\WindowsPowerShell\Modules",
+    "$env:USERPROFILE\Documents\PowerShell\Modules"
+) | Where-Object { Test-Path $_ }
 
-    foreach ($ModuleDirectory in $ModuleDirectories) {
-        $TargetPath = Join-Path $ModuleDirectory $ModuleName
-        Write-Host "Installing module '$ModuleName' to '$TargetPath'..." -ForegroundColor Cyan
+foreach ($ModuleDirectory in $ModuleDirectories) {
 
-        # Remove loaded module
-        if (Get-Module -Name $ModuleName) {
-            Remove-Module -Name $ModuleName -Force -ErrorAction SilentlyContinue
-        }
+    $TargetPath = Join-Path $ModuleDirectory $ModuleName
+    Write-Host "Installing module '$ModuleName' to '$TargetPath'..." -ForegroundColor Cyan
 
-        # Remove old files
-        if (Test-Path $TargetPath) {
-            Remove-Item -Path $TargetPath -Recurse -Force -ErrorAction Stop
-        }
+    # Remove loaded module
+    if (Get-Module -Name $ModuleName) {
+        Remove-Module -Name $ModuleName -Force -ErrorAction SilentlyContinue
+    }
 
-        # Copy files (manual filter instead of -Exclude for recursion)
-        New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
-        Get-ChildItem -Path $ModulePath -Recurse -Force |
+    # Remove old files
+    if (Test-Path $TargetPath) {
+        Remove-Item -Path $TargetPath -Recurse -Force -ErrorAction Stop
+    }
+
+    # Copy files safely
+    $ModulePathFull = (Resolve-Path $ModulePath).ProviderPath.TrimEnd('\')
+
+    Get-ChildItem -Path $ModulePathFull -Recurse -Force |
         Where-Object {
+            # Skip ignored files/folders
             $name = $_.Name
-            $dir  = $_.Directory.Name
-            -not ($IgnoreFiles -contains $name -or
-                $IgnoreFiles -contains $dir  -or
-                $IgnoreFiles -contains $_.FullName)
+            $parentDir = $_.PSParentPath.Split('\')[-1]  # immediate parent folder
+            -not ($IgnoreFiles -contains $name -or $IgnoreFiles -contains $parentDir)
         } |
         ForEach-Object {
-            $dest = Join-Path $TargetPath ($_.FullName.Substring($ModulePath.Length).TrimStart('\'))
-            if (-not (Test-Path (Split-Path $dest -Parent))) {
-                New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
+            # Compute relative path
+            $relative = $_.FullName.Substring($ModulePathFull.Length).TrimStart('\','/')
+            $dest = Join-Path $TargetPath $relative
+
+            # Ensure parent directory exists
+            $destParent = Split-Path $dest -Parent
+            if ($destParent -and -not (Test-Path $destParent)) {
+                New-Item -ItemType Directory -Path $destParent -Force | Out-Null
             }
+
+            # Copy file
             Copy-Item -Path $_.FullName -Destination $dest -Force
         }
 
-        # Import module
-        Import-Module $TargetPath -Force -ErrorAction Stop
-        Write-Host "Installed module '$ModuleName'." -ForegroundColor Green
-    }
+    # Import module after copy
+    Import-Module $TargetPath -Force -ErrorAction Stop
+    Write-Host "Installed module '$ModuleName'." -ForegroundColor Green
+}
 }
