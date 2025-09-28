@@ -1,32 +1,22 @@
 function Install-FromDev {
-    <#
-    .SYNOPSIS
-    Installs and imports a PowerShell module from a development folder into the user's module path.
+<#
+.SYNOPSIS
+Installs and imports a PowerShell module from a development folder.
 
-    .DESCRIPTION
-    Copies the module folder into the user’s module path:
-    $env:USERPROFILE\Documents\WindowsPowerShell\Modules
-    If a module with the same name already exists, it is removed first.
-    Afterwards, the module is imported into the current session. 
-    The module manifest (.psd1) is generated from a JSON config file.
+.DESCRIPTION
+Copies the module folder into the user’s module path.  
+Removes any existing copy before installation.  
+Calls a custom Generate-Manifest function with config from JSON.  
 
-    .PARAMETER ModulePath
-    Path to the module folder to install.
+.PARAMETER ModulePath
+Path to the module folder.
 
-    .PARAMETER ModuleName
-    Name of the module. If not provided, it is derived from the ModulePath.
+.PARAMETER ModuleName
+Module name. Defaults to folder name.
 
-    .PARAMETER ConfigPath
-    Path to the JSON config file describing the module manifest. Optionally includes the keyowrd IgnoreFiles with ann array of file/folder names to exclude when copying the module.
-    Any key/value pair in the JSON is passed to New-ModuleManifest. Path and RootModule are auto-set. ModuleVersion and PowerShellVersion are set to defaults if not provided.
-    Defaults to "$ModulePath\$ModuleName.json".
-
-    .EXAMPLE
-    Install-FromDev -ModulePath .
-
-    .NOTES
-    To check allowed keywords for the manifest generator, see: https://learn.microsoft.com/de-de/powershell/module/microsoft.powershell.core/new-modulemanifest?view=powershell-7.5
-    #>
+.PARAMETER ConfigPath
+Path to JSON config file. Defaults to "$ModulePath\$ModuleName.json".
+#>
 
     [CmdletBinding()]
     param(
@@ -38,85 +28,63 @@ function Install-FromDev {
         [string]$ConfigPath = (Join-Path $ModulePath "$ModuleName.json")
     )
 
-    if ($PSVersionTable.PSVersion.Major -ge 6) {
-        $ModuleDirectory = "$env:USERPROFILE\Documents\PowerShell\Modules"
-        Write-Warning "Using PowerShell 6+ module directory path."
-    } else {
-        $ModuleDirectory = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
-        Write-Warning "Using Windows PowerShell 5 module directory path."
-    }
-    $TargetPath = Join-Path $ModuleDirectory $ModuleName
-
-    Write-Host "Installing module '$ModuleName' from '$ModulePath' to '$TargetPath'..." -ForegroundColor Cyan
-
-
-    # --- Preflight: execution policy and PS version ---
-    $RequiredPolicy = "RemoteSigned"
-    try {
-        $CurrentExecutionPolicy = Get-ExecutionPolicy -Scope CurrentUser
-        if ($CurrentExecutionPolicy -ne $RequiredPolicy) {
-            Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy $RequiredPolicy -Force
-            Write-Information "Execution Policy has been set to '$RequiredPolicy' for the current user."
-        }
-    } catch {
-        Write-Error "Failed to set execution policy: $_"
-    }
-
-    
-
     # --- Read config ---
     if (-not (Test-Path $ConfigPath)) {
         throw "Config file not found: $ConfigPath"
     }
-
     try {
         $config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
     } catch {
-        throw "Failed to read or parse JSON config: $_"
+        throw "Failed to parse config JSON: $_"
     }
 
-
-    # --- Generate manifest ---
+    # --- Ignore list ---
     $DefaultIgnoreFiles = @(".git", ".gitignore", ".vscode", "README.md", "LICENSE", "manifest.json")
     $IgnoreFiles = if ($config.IgnoreFiles) { $config.IgnoreFiles } else { $DefaultIgnoreFiles }
 
+    # --- Generate manifest via your custom function ---
     Generate-Manifest -ModulePath $ModulePath -Config $config -ModuleName $ModuleName
-    
-    # --- Remove existing module ---
-    if (Get-Module -Name $ModuleName) {
-        try {
-            Remove-Module -Name $ModuleName -Force -ErrorAction Stop
-            Write-Information "Removed loaded module '$ModuleName' from the current session."
-        } catch {
-            Write-Error "Failed to remove loaded module $ModuleName : $_"
-        }
-    }
 
-    if (Test-Path $TargetPath) {
-        try {
+    # --- Module directories ---
+    $ModuleDirectories = @(
+        "$env:USERPROFILE\Documents\WindowsPowerShell\Modules",
+        "$env:USERPROFILE\Documents\PowerShell\Modules"
+    ) | Where-Object { Test-Path $_ }
+
+    foreach ($ModuleDirectory in $ModuleDirectories) {
+        $TargetPath = Join-Path $ModuleDirectory $ModuleName
+        Write-Host "Installing module '$ModuleName' to '$TargetPath'..." -ForegroundColor Cyan
+
+        # Remove loaded module
+        if (Get-Module -Name $ModuleName) {
+            Remove-Module -Name $ModuleName -Force -ErrorAction SilentlyContinue
+        }
+
+        # Remove old files
+        if (Test-Path $TargetPath) {
             Remove-Item -Path $TargetPath -Recurse -Force -ErrorAction Stop
-            Write-Information "Removed existing module files at: '$TargetPath'."
-        } catch {
-            Throw "Failed to remove existing module: $_"
         }
-    }
 
-    # --- Copy new module files ---
-    New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
+        # Copy files (manual filter instead of -Exclude for recursion)
+        New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
+        Get-ChildItem -Path $ModulePath -Recurse -Force |
+        Where-Object {
+            $name = $_.Name
+            $dir  = $_.Directory.Name
+            -not ($IgnoreFiles -contains $name -or
+                $IgnoreFiles -contains $dir  -or
+                $IgnoreFiles -contains $_.FullName)
+        } |
+        ForEach-Object {
+            $dest = Join-Path $TargetPath ($_.FullName.Substring($ModulePath.Length).TrimStart('\'))
+            if (-not (Test-Path (Split-Path $dest -Parent))) {
+                New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
+            }
+            Copy-Item -Path $_.FullName -Destination $dest -Force
+        }
 
-    try {
-        Copy-Item -Path "$ModulePath\*" -Destination $TargetPath -Recurse -Force -Exclude $IgnoreFiles
-        Write-Information "Copied module files successfully." 
-    } catch {
-        Throw "Failed to copy module files: $_"
-    }
-
-
-    # --- Import module ---
-    try {
+        # Import module
         Import-Module $TargetPath -Force -ErrorAction Stop
-        Write-Host "Module $ModuleName installed successfully." -ForegroundColor Green
-    } catch {
-        Throw "Failed to import module '$ModuleName': $_"
+        Write-Host "Installed module '$ModuleName'." -ForegroundColor Green
     }
 }

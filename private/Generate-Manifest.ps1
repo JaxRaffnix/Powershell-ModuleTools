@@ -19,7 +19,7 @@ function Generate-Manifest {
     .EXAMPLE
     $config = Get-Content .\manifest.json | ConvertFrom-Json
     Generate-Manifest -ModulePath . -Config $config
-#>
+    #>
 
     [CmdletBinding()]
     param(
@@ -37,12 +37,15 @@ function Generate-Manifest {
     # check if a function in the public folder is not exported
     Test-PublicExport -ModulePath $ModulePath
 
+    $publicFunctions = Get-PublicFiles -ModulePath $ModulePath
+
     # Mandatory / auto-set fields
     $manifestParams = @{
         Path            = $ManifestPath
         RootModule      = "$ModuleName.psm1"
         ModuleVersion   =  if ($Config.ModuleVersion) { $Config.ModuleVersion } else { "1.0.0" }
         PowerShellVersion = if ($Config.PowerShellVersion) { $Config.PowerShellVersion } else { "5.1" }
+        FunctionsToExport = $publicFunctions
     }
 
     # Add all other key/value pairs dynamically from JSON
