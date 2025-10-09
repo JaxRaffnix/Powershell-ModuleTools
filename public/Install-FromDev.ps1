@@ -92,7 +92,7 @@ foreach ($ModuleDirectory in $ModuleDirectories) {
         }
 
     # Import module after copy
-    Import-Module $TargetPath -Force -ErrorAction Stop
+    Import-Module $TargetPath -Force -Global -ErrorAction Stop
     Write-Host "Installed module '$ModuleName'." -ForegroundColor Green
 }
 }
