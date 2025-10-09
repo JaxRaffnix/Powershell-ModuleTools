@@ -45,7 +45,7 @@ function Generate-Manifest {
         RootModule      = "$ModuleName.psm1"
         ModuleVersion   =  if ($Config.ModuleVersion) { $Config.ModuleVersion } else { "1.0.0" }
         PowerShellVersion = if ($Config.PowerShellVersion) { $Config.PowerShellVersion } else { "5.1" }
-        FunctionsToExport = $publicFunctions
+        FunctionsToExport = if ($publicFunctions) { $publicFunctions } else { '*' }
     }
 
     # Add all other key/value pairs dynamically from JSON
@@ -53,6 +53,11 @@ function Generate-Manifest {
         if ($manifestParams.ContainsKey($key)) { continue } # skip already set mandatory fields
         if ($key -eq "IgnoreFiles") { continue } # skip IgnoreFiles, not a manifest param
         $manifestParams[$key] = $Config.$key
+    }
+
+    # Ensure RequiredModules stays an array
+    if ($manifestParams.ContainsKey('RequiredModules')) {
+        $manifestParams['RequiredModules'] = @($manifestParams['RequiredModules'])
     }
 
     try {
