@@ -17,6 +17,10 @@ function Test-PublicExport {
 
     foreach ($file in $publicFiles) {
         $content = Get-Content $file.FullName -Raw
+        if (-not $content) {
+            Write-Warning "Skipping empty or unreadable file: $($file.FullName)"
+            continue
+        }
         $matches = [regex]::Matches($content, '(?m)^\s*function\s+([^\s{(]+)', 'IgnoreCase') |
                    ForEach-Object { $_.Groups[1].Value }
         foreach ($func in $matches) {
