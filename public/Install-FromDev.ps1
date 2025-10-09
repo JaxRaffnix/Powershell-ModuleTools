@@ -54,7 +54,7 @@ Path to JSON config file. Defaults to "$ModulePath\$ModuleName.json".
 foreach ($ModuleDirectory in $ModuleDirectories) {
 
     $TargetPath = Join-Path $ModuleDirectory $ModuleName
-    Write-Host "Installing module '$ModuleName' to '$TargetPath'..." -ForegroundColor Cyan
+    Write-Verbose "Installing module '$ModuleName' to '$TargetPath'..."
 
     # Remove loaded module
     if (Get-Module -Name $ModuleName) {
@@ -93,6 +93,6 @@ foreach ($ModuleDirectory in $ModuleDirectories) {
 
     # Import module after copy
     Import-Module $TargetPath -Force -Global -ErrorAction Stop
-    Write-Host "Installed module '$ModuleName'." -ForegroundColor Green
+    Write-Host "Successfully installed module '$ModuleName' to '$ModuleDirectory'." -ForegroundColor Green
 }
 }

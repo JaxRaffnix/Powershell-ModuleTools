@@ -36,7 +36,7 @@ function New-ModuleStructure {
     $directories = @("private", "public")
     $files = @("README.md")
 
-    Write-Host "Setting up structure for module '$ModuleName' in directory '$ModulePath'..." -ForegroundColor Cyan
+    Write-Verbose "Setting up structure for module '$ModuleName' in directory '$ModulePath'..." 
 
     foreach ($dir in $directories) {
         $fullPath = Join-Path $ModulePath $dir
@@ -104,5 +104,5 @@ function New-ModuleStructure {
         }
     }
 
-    Write-Host "Module structure set up successfully." -ForegroundColor Green
+    Write-Host "Successfully setup module '$ModuleName' at '$ModulePath'." -ForegroundColor Green
 }
