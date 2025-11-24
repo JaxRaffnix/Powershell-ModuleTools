@@ -5,6 +5,8 @@ Easily install and update local PowerShell modules during development.
 ## TODO:
 
 - All public functions are exported if they match the filename. If there is a second function in a public file, there will be an error. This is a very hardcoded way of enabling functions.
+- dev project folder for apowershell module needs an additional json file for this to work.
+- should i keep support for powershell 5 and 7? eitherway, i should migrate all of my system to the new powershell...
 
 ## Requirements
 
